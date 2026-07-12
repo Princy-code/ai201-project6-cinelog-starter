@@ -8,7 +8,12 @@ tests/test_collection.py.
 import pytest
 from app import create_app, db
 from models import User, Film
-from services.watchlist_service import add_to_watchlist, AlreadyInWatchlistError
+from services.watchlist_service import (
+    add_to_watchlist,
+    remove_from_watchlist,
+    AlreadyInWatchlistError,
+    NotInWatchlistError,
+)
 from services.collection_service import FilmNotFoundError
 
 
@@ -80,3 +85,32 @@ def test_add_to_watchlist_duplicate_raises(app, sample_user, sample_film):
             user_id=sample_user, film_id=sample_film
         ).count()
         assert count == 1
+
+
+# ── remove_from_watchlist ─────────────────────────────────────────────────────
+
+def test_remove_from_watchlist_removes_entry(app, sample_user, sample_film):
+    """
+    Removing a film that's on the watchlist should delete the entry.
+    """
+    with app.app_context():
+        from models import WatchlistEntry
+
+        add_to_watchlist(user_id=sample_user, film_id=sample_film)
+
+        remove_from_watchlist(user_id=sample_user, film_id=sample_film)
+
+        in_db = WatchlistEntry.query.filter_by(
+            user_id=sample_user, film_id=sample_film
+        ).first()
+        assert in_db is None
+
+
+def test_remove_from_watchlist_not_present_raises(app, sample_user, sample_film):
+    """
+    Removing a film that isn't on the watchlist should raise
+    NotInWatchlistError, not silently succeed.
+    """
+    with app.app_context():
+        with pytest.raises(NotInWatchlistError):
+            remove_from_watchlist(user_id=sample_user, film_id=sample_film)
