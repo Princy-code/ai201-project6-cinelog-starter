@@ -50,6 +50,10 @@ There's also a consistency argument: alphabetical-by-title is already the sort o
 
 **How I verified no conflict remains:** `grep -c "class WatchlistEntry" models.py` returned `0` immediately after the rebase (confirming the silent loss), and `1` after re-adding the class. `git log --oneline origin/main..HEAD` shows a linear sequence of commits with no merge commits. `pytest tests/ -v` passes all 8 tests post-rebase, including `test_add_to_watchlist_nonexistent_film_raises`, which now exercises the UUID path for real instead of relying on SQLite's lenient type affinity to paper over an Integer/UUID mismatch.
 
+**Screenshot (final commit history, Milestone 4):**
+![git log --oneline](screenshots/git-log.png)
+
+
 ## Stretch — remove_from_watchlist()
 **What I did:** Added `remove_from_watchlist(user_id, film_id)` to `services/watchlist_service.py`, following the same shape as `remove_from_collection()`: look up the entry, raise a new `NotInWatchlistError` if it doesn't exist, otherwise delete and commit. Wired it up as `DELETE /watchlist/<user_id>/remove` in `routes/watchlist/watchlist.py`, matching the `/collection/<user_id>/remove` route's request/response shape (`{"film_id": ...}` body, 404 on not-found, 200 with a message on success).
 
